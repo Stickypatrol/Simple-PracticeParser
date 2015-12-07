@@ -34,17 +34,45 @@ let checkNumeric : Parser<char, char> =
       return! fail ["expected numeric, got this: " + result.ToString()   ]
   }
 
-let ReadInteger : Parser<char, Token> =
+let readInteger : Parser<char, Token> =
   prs{
     let! result = repeatAtLeastOnce checkNumeric
     return ValueType(Integer(System.Int32.Parse(List.fold (fun acc elem -> acc + (elem.ToString())) "" result)))
   }
 
-let ReadString : Parser<char, Token> =
+let readString : Parser<char, Token> =
   prs{
-    let! result = repeatAtLeastOnce checkNumeric
+    let! result = repeatAtLeastOnce checkAlpha
     return ValueType(String(List.fold (fun acc elem -> acc + (elem.ToString())) "" result))
   }
 
+let whiteSpace : Parser<char, Unit> =
+  prs{
+    let! result = getHead
+    if result = '\t' || result = ' ' || result = '\n' || result = '\r' then
+      return ()
+    else
+      return! fail ["expected whitespace"]
+  }
 
-let lexer() =
+let checkWhiteSpace : Parser<char, Unit> =
+  prs{
+    let! _ = repeat whiteSpace
+    return ()
+  }
+
+let rec lexer () =
+  prs{
+    //here I want all the possible matches
+    do! checkWhiteSpace
+    let! head =
+      readString <|>
+      readInteger
+    do! checkWhiteSpace
+    let! tail = lexer()
+    return head::tail
+  }<|>
+  prs{
+    do! getEOF
+    return []
+  }

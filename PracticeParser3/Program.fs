@@ -6,7 +6,7 @@ open ErrorMonad
 
 [<EntryPoint>]
 let main argv = 
-    let sample = "text to be checked"
+    let sample = "aaaa    aa11aa    1234567890"
     match lexer() (List.ofSeq sample) with
       | Result x -> printfn "%A" x
       | Error x -> printfn "%A" x
