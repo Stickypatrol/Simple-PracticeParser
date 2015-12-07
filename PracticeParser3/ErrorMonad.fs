@@ -14,5 +14,7 @@ let (>>=) = bind
 
 type ResultBuilder() =
   member this.Return a = ret a
+  member this.ReturnFrom a = a
   member this.Bind (p,k) = p >>= k
-let res = ResultBuilder()
+
+let err = ResultBuilder()

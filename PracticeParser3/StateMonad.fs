@@ -2,18 +2,50 @@
 
 open ErrorMonad
 
-type Parser<'a, 'char> = List<'char> -> Result<'a * List<'char>>
+type Parser<'char, 'a> = List<'char> -> Result<'a * List<'char>>
 
-let ret a = fun s -> (a, s)
+let ret (a:'a) : Parser<'char, 'a> = fun s -> err{return (a, s)}
 
-let bind p k =
+let bind (p : Parser<'char, 'a>) (k: 'a -> Parser<'char, 'b>) : Parser<'char, 'b> =
   fun s ->
-    let a, s' = p s
-    k a s'
+    err{
+      let! a, s' = p s
+      return! k a s'
+    }
 
 let (>>=) = bind
 
+let fail failmsg =
+  fun s ->
+    ErrorMonad.Error failmsg
+
 type ParserBuilder() =
-  member this.Return a = ret a
-  member this.Bind p k = p >>= k
+  member this.ReturnFrom(a) = a
+  member this.Return(a)= ret a
+  member this.Bind (p, k) = p >>= k
 let prs = ParserBuilder()
+
+let (.||) p1 p2 =
+  fun s ->
+    match p1 s with
+    | Result res -> Result res
+    | Error err1 -> match p2 s with
+                    | Result res -> Result res
+                    | Error err2 -> Error (List.append err1 err2)
+
+let rec repeat (p:Parser<'char, 'a>) =
+  prs{
+    let! h = p
+    let! t = repeat p
+    return h::t
+  } .||
+  prs{
+    return []
+  }
+
+let repeatAtLeastOnce p =
+  prs{
+    let! h = p
+    let! t = repeat p
+    return h::t
+  }

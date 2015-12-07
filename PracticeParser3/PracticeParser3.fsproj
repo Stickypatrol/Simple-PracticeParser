@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Base.fs" />
     <Compile Include="ErrorMonad.fs" />
     <Compile Include="StateMonad.fs" />
     <Compile Include="Lexer.fs" />
