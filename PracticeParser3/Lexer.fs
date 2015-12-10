@@ -2,19 +2,40 @@
 
 open ParserMonad
 open ErrorMonad
-open Base
+open BaseTypes
 
 let getHead =
   fun s ->
     match s with
     | h::t -> err{return (h,t)}
-    | [] -> err{return! ErrorMonad.Error(["expected head, instead got tail"])}
+    | [] -> err{return! ErrorMonad.Error(["expected head, instead got: ", "[]"])}
 
 let getEOF =
   fun s ->
     match s with
     | [] -> err{return ((), [])}
-    | h::T -> err{return! ErrorMonad.Error(["expected EOF, instead got symbol"])}
+    | h::t -> err{return! ErrorMonad.Error(["expected EOF, instead got symbol: ", t.ToString()])}
+
+let rec getWord cs =
+  match cs with
+  | [] -> prs{return ()}
+  | h::t ->
+    prs{
+      let! result = getHead
+      if result = h then
+        return! getWord t
+      else
+        return! fail [Printf.sprintf "expected %c, instead got something else: " h, result.ToString()]
+    }
+
+let checkAlphaNum : Parser<char, char> =
+  prs{
+    let! result = getHead
+    if (result >= 'a' && result <= 'z') || (result >= 'A' && result <= 'Z') || (result >= '0' && result <= '9') then
+      return result
+    else
+      return! fail ["expected alphanumeric, got this: ", result.ToString()]
+  }
 
 let checkAlpha : Parser<char, char> =
   prs{
@@ -22,7 +43,7 @@ let checkAlpha : Parser<char, char> =
     if (result >= 'a' && result <= 'z') || (result >= 'A' && result <= 'Z') then
       return result
     else
-      return! fail ["expected alphabetic, got this: " + result.ToString()]
+      return! fail ["expected alphabetic, got this: ", result.ToString()]
   }
 
 let checkNumeric : Parser<char, char> =
@@ -31,7 +52,13 @@ let checkNumeric : Parser<char, char> =
     if (result >= '0' && result <= '9') then
       return result
     else
-      return! fail ["expected numeric, got this: " + result.ToString()   ]
+      return! fail ["expected numeric, got this: ", result.ToString()]
+  }
+
+let readKeyword (cs:List<char>) (keyw:Keyword) : Parser<char, Token> =
+  prs{
+    do! getWord cs
+    return Keyword(keyw)
   }
 
 let readInteger : Parser<char, Token> =
@@ -52,7 +79,7 @@ let whiteSpace : Parser<char, Unit> =
     if result = '\t' || result = ' ' || result = '\n' || result = '\r' then
       return ()
     else
-      return! fail ["expected whitespace"]
+      return! fail ["expected whitespace, instead got: ", result.ToString()]
   }
 
 let checkWhiteSpace : Parser<char, Unit> =
@@ -66,8 +93,12 @@ let rec lexer () =
     //here I want all the possible matches
     do! checkWhiteSpace
     let! head =
-      readString <|>
-      readInteger
+      readKeyword (List.ofSeq "if") Keyword.If <|>
+      readKeyword (List.ofSeq "else") Keyword.Else <|>
+      readKeyword (List.ofSeq "while") Keyword.While <|>
+      readKeyword (List.ofSeq "while") Keyword.While <|>
+      readInteger <|>
+      readString
     do! checkWhiteSpace
     let! tail = lexer()
     return head::tail

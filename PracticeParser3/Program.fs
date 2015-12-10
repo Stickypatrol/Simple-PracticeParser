@@ -6,8 +6,15 @@ open ErrorMonad
 
 [<EntryPoint>]
 let main argv = 
-    let sample = "aaaa    aa11aa    1234567890"
-    match lexer() (List.ofSeq sample) with
+    let rec recurprint x =
+      match x with
+      | h::t -> printfn "%A" h
+                recurprint t
+      | [] -> ()
+    let file = System.IO.File.ReadAllText "main.txt"
+    match lexer() (List.ofSeq file) with
       | Result x -> printfn "%A" x
-      | Error x -> printfn "%A" x
+      | Error x ->  printfn "Something went wrong, we got this back:"
+                    recurprint x
+
     0 // return an integer exit code

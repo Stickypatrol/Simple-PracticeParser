@@ -2,7 +2,7 @@
 
 type Result<'a> =
   | Result of 'a
-  | Error of List<string>
+  | Error of List<string * string>
 
 let ret a = Result(a)
 

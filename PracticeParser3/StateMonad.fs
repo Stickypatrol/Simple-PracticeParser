@@ -1,6 +1,7 @@
 ﻿module ParserMonad
 
 open ErrorMonad
+open BaseTypes
 
 type Parser<'char, 'a> = List<'char> -> Result<'a * List<'char>>
 
